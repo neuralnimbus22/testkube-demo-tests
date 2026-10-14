@@ -21,6 +21,7 @@ spec:
       revision: main
       paths:
       - mobile/maestro
+      - mobile/testkube
 
   # Defaults for every step in the test pod.
   container:
@@ -84,6 +85,7 @@ spec:
       adb connect $DEVICE > /dev/null
       curl -fsSL -o /data/app.apk "{{ config.apkUrl }}"
       adb -s $DEVICE install -r /data/app.apk
+      sh /data/repo/mobile/testkube/record-device.sh $DEVICE "{{ config.apkUrl }}"
 
   - name: Run Maestro flows
     workingDir: /data/repo/mobile/maestro
@@ -93,8 +95,16 @@ spec:
       mkdir -p /data/reports
       $MAESTRO_DIR/bin/maestro --device $DEVICE test \
         --format junit --output /data/reports/junit.xml \
+        --test-suite-name "Android 13 emulator smoke" \
         --test-output-dir /data/reports/maestro \
         .
+
+  # Runs even when a flow fails, so the screenshots are always in the report.
+  - name: Build mobile report
+    condition: always
+    container:
+      image: python:3.12-slim
+    shell: python3 /data/repo/mobile/testkube/build-report.py /data/reports
     artifacts:
       workingDir: /data/reports
       paths:

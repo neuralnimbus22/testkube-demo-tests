@@ -11,6 +11,8 @@ Two Maestro smoke flows for the Wikipedia Android app, run by a Testkube workflo
 | `maestro/01-app-opens-and-shows-feed.yaml` | The app opens and the Explore feed loads live content. |
 | `maestro/02-search-and-open-article.yaml` | Search returns results and an article opens. |
 | `testkube/android-maestro-smoke.yaml` | The Testkube workflow that runs the flows. |
+| `testkube/record-device.sh` | Records the emulator and app facts (model, Android version, screen, app version) for the report. |
+| `testkube/build-report.py` | Builds `mobile-report.html`: device facts plus every screenshot in a phone frame. |
 
 ## How a run works
 
@@ -18,8 +20,9 @@ Two Maestro smoke flows for the Wikipedia Android app, run by a Testkube workflo
 2. Testkube waits until Android has finished booting.
 3. The test pod clones this folder, installs the Maestro CLI and connects to the emulator over ADB.
 4. It downloads the APK and installs it on the emulator with `adb install`.
-5. Maestro runs every flow in `maestro/`. JUnit report, screenshots and screen recordings are saved as artifacts.
-6. Testkube deletes the emulator pod and the test pod.
+5. Maestro runs every flow in `maestro/`.
+6. A last step builds `mobile-report.html`. It runs even when a flow fails. The report, the JUnit file, the screenshots and the screen recordings are saved as artifacts.
+7. Testkube deletes the emulator pod and the test pod.
 
 ## Run the flows locally
 
