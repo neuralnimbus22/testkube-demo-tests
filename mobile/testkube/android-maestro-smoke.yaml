@@ -1,0 +1,101 @@
+kind: TestWorkflow
+apiVersion: testworkflows.testkube.io/v1
+metadata:
+  name: android-maestro-smoke
+  namespace: testkube
+  labels:
+    tool: maestro
+    platform: android
+    suite: smoke
+spec:
+  config:
+    apkUrl:
+      type: string
+      description: Where to download the APK under test, for example the build your CI just produced
+      default: https://raw.githubusercontent.com/neuralnimbus22/testkube-demo-tests/main/mobile/apps/wikipedia-sample.apk
+
+  # The Maestro flows come straight from the app repo.
+  content:
+    git:
+      uri: https://github.com/neuralnimbus22/testkube-demo-tests
+      revision: main
+      paths:
+      - mobile/maestro
+
+  # Defaults for every step in the test pod.
+  container:
+    image: halimqarroum/docker-android:api-33
+    env:
+    - name: MAESTRO_DIR
+      value: /data/maestro
+    - name: MAESTRO_VERSION
+      value: 2.11.0
+    - name: MAESTRO_CLI_NO_ANALYTICS
+      value: "1"
+    - name: MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED
+      value: "true"
+    resources:
+      requests:
+        cpu: "1"
+        memory: 2Gi
+
+  # The Android emulator runs in its own pod, next to the test pod.
+  services:
+    emulator:
+      description: Android 13 emulator
+      image: halimqarroum/docker-android:api-33
+      workingDir: /opt
+      env:
+      - name: MEMORY
+        value: "4096"
+      - name: CORES
+        value: "4"
+      securityContext:
+        privileged: true
+      resources:
+        requests:
+          cpu: "2"
+          memory: 6Gi
+      readinessProbe:
+        exec:
+          command: ["sh", "-c", "/opt/android/platform-tools/adb shell getprop sys.boot_completed | grep -q 1"]
+        initialDelaySeconds: 10
+        periodSeconds: 2
+        failureThreshold: 150
+      timeout: 5m
+      logs: always
+
+  steps:
+  - name: Install Maestro CLI
+    shell: |
+      curl -fsSL https://get.maestro.mobile.dev | bash > /dev/null
+      $MAESTRO_DIR/bin/maestro --version
+
+  - name: Connect to the emulator
+    shell: |
+      DEVICE={{ services.emulator.0.ip }}:5555
+      adb connect $DEVICE | grep -E "connected to|already connected"
+      adb -s $DEVICE wait-for-device
+      echo "Android $(adb -s $DEVICE shell getprop ro.build.version.release) is ready at $DEVICE"
+
+  - name: Install the app
+    shell: |
+      DEVICE={{ services.emulator.0.ip }}:5555
+      adb connect $DEVICE > /dev/null
+      curl -fsSL -o /data/app.apk "{{ config.apkUrl }}"
+      adb -s $DEVICE install -r /data/app.apk
+
+  - name: Run Maestro flows
+    workingDir: /data/repo/mobile/maestro
+    shell: |
+      DEVICE={{ services.emulator.0.ip }}:5555
+      adb connect $DEVICE > /dev/null
+      mkdir -p /data/reports
+      $MAESTRO_DIR/bin/maestro --device $DEVICE test \
+        --format junit --output /data/reports/junit.xml \
+        --test-output-dir /data/reports/maestro \
+        .
+    artifacts:
+      workingDir: /data/reports
+      paths:
+      - "**/*"

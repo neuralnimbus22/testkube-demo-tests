@@ -10,6 +10,7 @@ Two Maestro smoke flows for the Wikipedia Android app, run by a Testkube workflo
 | `maestro/common/skip-onboarding.yaml` | Shared step. Starts the app from a clean state and skips the welcome screens. |
 | `maestro/01-app-opens-and-shows-feed.yaml` | The app opens and the Explore feed loads live content. |
 | `maestro/02-search-and-open-article.yaml` | Search returns results and an article opens. |
+| `testkube/android-maestro-smoke.yaml` | The Testkube workflow that runs the flows. |
 
 ## How a run works
 
