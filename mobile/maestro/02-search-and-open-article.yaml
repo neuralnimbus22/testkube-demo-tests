@@ -1,0 +1,26 @@
+# Smoke test 2: search returns results and an article opens.
+appId: org.wikipedia
+name: Search and open an article
+tags:
+  - smoke
+---
+- startRecording: 02-search-and-open-article
+- runFlow: common/skip-onboarding.yaml
+- tapOn:
+    id: "org.wikipedia:id/search_container"
+- inputText: "Kubernetes"
+- extendedWaitUntil:
+    visible: "Open-source container software"
+    timeout: 15000
+- takeScreenshot: 02-search-results
+- hideKeyboard
+- tapOn:
+    id: "org.wikipedia:id/page_list_item_title"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "org.wikipedia:id/page_actions_tab_layout"
+    timeout: 20000
+- assertVisible: "Cloud Native Computing Foundation"
+- takeScreenshot: 02-article
+- stopRecording

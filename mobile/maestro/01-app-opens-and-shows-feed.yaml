@@ -1,0 +1,20 @@
+# Smoke test 1: the app opens and shows live data from the backend.
+appId: org.wikipedia
+name: App opens and shows the Explore feed
+tags:
+  - smoke
+---
+- startRecording: 01-app-opens-and-shows-feed
+- runFlow: common/skip-onboarding.yaml
+- assertVisible:
+    id: "org.wikipedia:id/main_toolbar_wordmark"
+- assertVisible:
+    id: "org.wikipedia:id/search_container"
+# The feed card only appears once content has loaded from the API.
+- extendedWaitUntil:
+    visible:
+      id: "org.wikipedia:id/view_featured_article_card_header"
+    timeout: 20000
+- assertVisible: "Featured article"
+- takeScreenshot: 01-explore-feed
+- stopRecording
